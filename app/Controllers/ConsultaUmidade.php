@@ -8,17 +8,6 @@ use Exception;
 
 class ConsultaUmidade extends BaseController
 {
-    protected $client;
-
-    public function __construct()
-    {
-        $this->client = service('curlrequest');
-        
-        header('Access-Control-Allow-Origin: *');
-        header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-    }
-
     public function index()
     {
         return view('consultaUmidade');
@@ -26,27 +15,31 @@ class ConsultaUmidade extends BaseController
 
     public function verificaUmidade()
     {
+        $client = service('curlrequest');
+
         $umidade = $this->request->getPost('umidade');
         $lat = $this->request->getPost('lat');
         $lon = $this->request->getPost('long');
 
         $apiKey = '179929b7ffdec969a45a06c95705d2c4';
 
-        $apiUrl = "https://api.openweathermap.org/data/2.5/weather?{$lat}=35&{$lon}=139&appid={$apiKey}";
-        
+        $apiUrl = "https://api.openweathermap.org/data/2.5/weather?lat={$lat}&lon={$lon}&appid={$apiKey}";
+
         try{
-            $response = $this->client->request('GET', $apiUrl);
+            $response = $client->request('GET', $apiUrl);
             $weatherData = json_decode($response->getBody());
 
-            if(isset($weatherData['humidity'])){
-                if($umidade < $weatherData['humidity']){
+            $humidity = $weatherData->main->humidity;
+
+            if(isset($humidity)){
+                if($umidade < $humidity){
                     return $this->response->setJSON([
-                        'message' => "ALERTA: A umidade atual é de: {$weatherData['humidity']}%, 
+                        'message' => "ALERTA: A umidade atual é de: {$humidity}%, 
                                     sendo maior que o valor informado {$umidade}%"
                     ]);
                 }else{
                     return $this->response->setJSON([
-                        'message' => "A umidade atual {$weatherData['humidity']}% está dentro do 
+                        'message' => "A umidade atual {$humidity}% está dentro do 
                                     valor limite informado {$umidade}%"
                     ]);
                 }
